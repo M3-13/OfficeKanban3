@@ -11,6 +11,7 @@ interface ColumnViewProps {
   onTicketClick: (ticket: Ticket) => void;
   onCreateTicket: (data: TicketCreate) => void;
   onDeleteColumn?: () => void;
+  droppableId?: string;
 }
 
 export default function ColumnView({
@@ -19,6 +20,7 @@ export default function ColumnView({
   onTicketClick,
   onCreateTicket,
   onDeleteColumn,
+  droppableId,
 }: ColumnViewProps) {
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -114,7 +116,7 @@ export default function ColumnView({
         </form>
       )}
 
-      <Droppable droppableId={`column-${column.id}`}>
+      <Droppable droppableId={droppableId || `column-${column.id}`}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
