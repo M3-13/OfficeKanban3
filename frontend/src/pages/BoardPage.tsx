@@ -6,8 +6,9 @@ import type { Board, Column, ColumnCreate } from "../api/boards";
 import * as ticketsApi from "../api/tickets";
 import type { Ticket, TicketCreate, TicketUpdate } from "../api/tickets";
 import BoardHeader from "../components/BoardHeader";
-import ColumnView from "../components/ColumnView";
+import SwimlaneView, { type SwimlaneCriterion } from "../components/SwimlaneView";
 import TicketDetailModal from "../components/TicketDetailModal";
+import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 
 export default function BoardPage() {
@@ -21,6 +22,9 @@ export default function BoardPage() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [newColName, setNewColName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [swimlane, setSwimlane] = useState<SwimlaneCriterion>("none");
+
+  const { user } = useAuth();
 
   useWebSocket(boardId);
 
@@ -63,8 +67,12 @@ export default function BoardPage() {
       if (!destination) return;
       if (destination.droppableId === source.droppableId) return;
 
-      const sourceColId = Number(source.droppableId.replace("column-", ""));
-      const destColId = Number(destination.droppableId.replace("column-", ""));
+      const srcMatch = source.droppableId.match(/column-(\d+)$/);
+      const dstMatch = destination.droppableId.match(/column-(\d+)$/);
+      if (!srcMatch || !dstMatch) return;
+
+      const sourceColId = Number(srcMatch[1]);
+      const destColId = Number(dstMatch[1]);
       const ticketId = Number(draggableId.replace("ticket-", ""));
 
       try {
@@ -208,7 +216,12 @@ export default function BoardPage() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <BoardHeader board={board} onDelete={handleDeleteBoard} />
+      <BoardHeader
+        board={board}
+        onDelete={handleDeleteBoard}
+        swimlane={swimlane}
+        onSwimlaneChange={setSwimlane}
+      />
 
       <form onSubmit={handleCreateColumn} className="flex gap-2 mb-4">
         <input
@@ -226,23 +239,15 @@ export default function BoardPage() {
         </button>
       </form>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-        {columns.map((column) => (
-          <ColumnView
-            key={column.id}
-            column={column}
-            tickets={tickets[column.id] || []}
-            onTicketClick={(ticket) => setSelectedTicket(ticket)}
-            onCreateTicket={(data) => handleCreateTicket(column.id, data)}
-            onDeleteColumn={() => handleDeleteColumn(column.id)}
-          />
-        ))}
-        {columns.length === 0 && (
-          <p className="text-muted text-sm py-8">
-            Noch keine Spalten. Erstelle deine erste Spalte!
-          </p>
-        )}
-      </div>
+      <SwimlaneView
+        columns={columns}
+        tickets={tickets}
+        criterion={swimlane}
+        onTicketClick={(ticket) => setSelectedTicket(ticket)}
+        onCreateTicket={(colId, data) => handleCreateTicket(colId, data)}
+        onDeleteColumn={(colId) => handleDeleteColumn(colId)}
+        currentUserId={user?.id}
+      />
 
       {selectedTicket && (
         <TicketDetailModal
