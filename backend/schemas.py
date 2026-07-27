@@ -72,6 +72,22 @@ class TicketResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TicketUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    description: str | None = None
+    priority: int | None = Field(default=None, ge=1, le=5)
+    due_date: datetime.date | None = None
+    assignee_id: int | None = None
+    tags: list[str] | None = None
+    column_id: int | None = None
+
+
+class ColumnUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    position: int | None = None
+    wip_limit: int | None = None
+
+
 class CommentCreate(BaseModel):
     content: str = Field(min_length=1)
 
